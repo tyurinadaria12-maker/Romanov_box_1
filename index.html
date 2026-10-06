@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Вещи из мультфильмов — Шкатулка Анастасии</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html,body{ height:100%; }
+  body{ overflow:hidden; background:#070a1e; font-family:'Trebuchet MS','Segoe UI',Tahoma,sans-serif; }
+
+  #stage{ position:relative; width:100vw; height:100vh; user-select:none; -webkit-user-select:none; cursor:default;
+    background: radial-gradient(120% 90% at 50% 8%, #2c3f86 0%, #1b2450 42%, #0d1130 75%, #070a1e 100%); }
+
+  /* звёзды */
+  .star{ position:absolute; border-radius:50%; background:#fff; animation:tw 3s ease-in-out infinite; }
+  @keyframes tw{ 0%,100%{opacity:.2} 50%{opacity:1} }
+
+  /* мягкое свечение под шкатулкой */
+  #glow{ position:absolute; left:50%; top:40%; width:340px; height:340px; transform:translate(-50%,-50%);
+    background:radial-gradient(circle, rgba(120,255,190,.28), rgba(120,255,190,0) 62%); pointer-events:none; z-index:1; }
+
+  /* заголовок + подсказка */
+  #title{ position:absolute; top:20px; left:0; right:0; text-align:center; color:#ffe9b0; z-index:6; pointer-events:none;
+    text-shadow:0 2px 10px rgba(0,0,0,.6); }
+  #title h1{ font-size:clamp(20px,3.4vw,32px); letter-spacing:1px; }
+  #title p{ font-size:clamp(13px,1.9vw,17px); color:#cdd6ff; margin-top:6px; }
+
+  /* шкатулка */
+  #box{ position:absolute; left:50%; top:40%; width:230px; height:230px; transform:translate(-50%,-50%); z-index:3; }
+  #stage.revealed #glow{ width:460px; height:460px; transition:width .8s ease, height .8s ease;
+    background:radial-gradient(circle, rgba(255,220,120,.5), rgba(255,220,120,0) 62%); }
+  #box svg{ display:block; width:100%; height:100%; overflow:visible; }
+
+  #lidGroup{ transition:transform 1.4s cubic-bezier(.34,1.15,.4,1); }
+  #box.open #lidGroup{ transform:translateY(-172px); }
+
+  #ring{ opacity:0; transform:scale(.2); transform-origin:120px 150px; transform-box:view-box;
+    transition:opacity .6s ease .7s, transform .9s cubic-bezier(.3,1.5,.5,1) .7s; }
+  #box.open #ring{ opacity:1; transform:scale(1); }
+
+  #sparkles{ opacity:0; transition:opacity .5s ease .6s; }
+  #box.open #sparkles{ opacity:1; }
+  .sp{ fill:#fff6c8; animation:pop 1.5s ease-out infinite; }
+  @keyframes pop{ 0%{transform:scale(.2);opacity:0} 30%{opacity:1} 100%{transform:scale(1.3);opacity:0} }
+
+  /* ключ */
+  #key{ position:absolute; left:50%; top:72%; width:150px; height:150px; transform:translate(-50%,-50%) rotate(-18deg);
+    z-index:5; cursor:pointer; filter:drop-shadow(0 0 8px rgba(255,210,90,.8)); touch-action:none; }
+  #key svg{ display:block; width:100%; height:100%; overflow:visible; }
+  #key:hover{ filter:drop-shadow(0 0 16px rgba(255,225,120,1)); }
+  #key.gone{ opacity:0; pointer-events:none; }
+  #key.pulse{ animation:pulse 1.1s ease-in-out infinite; }
+  @keyframes pulse{ 0%,100%{filter:drop-shadow(0 0 8px rgba(255,210,90,.8))} 50%{filter:drop-shadow(0 0 22px rgba(255,240,160,1))} }
+
+  /* экран ошибки */
+  #blackout{ position:fixed; inset:0; background:#000; display:flex; align-items:center; justify-content:center;
+    z-index:100; opacity:0; visibility:hidden; transition:opacity .5s ease; }
+  #blackout.show{ opacity:1; visibility:visible; }
+  #blackout span{ color:#fff; font-size:clamp(24px,5vw,48px); font-weight:bold; letter-spacing:1px;
+    text-align:center; padding:0 20px; }
+
+  /* финальная надпись */
+  #finalMsg{ position:absolute; left:0; right:0; bottom:11%; text-align:center; color:#ffe9b0; z-index:6; pointer-events:none;
+    font-size:clamp(16px,2.4vw,22px); text-shadow:0 2px 10px rgba(0,0,0,.6); opacity:0; transition:opacity .8s ease 1.3s; }
+  #stage.revealed #finalMsg{ opacity:1; }
+  #again{ position:absolute; left:50%; bottom:5%; transform:translateX(-50%); z-index:7; cursor:pointer;
+    background:linear-gradient(#ffe9a8,#e8b64c); color:#5a3d0e; border:2px solid #fff; border-radius:30px;
+    padding:10px 26px; font-size:clamp(15px,2vw,19px); font-weight:bold; box-shadow:0 6px 18px rgba(0,0,0,.4);
+    opacity:0; visibility:hidden; transition:opacity .6s ease 1.6s; }
+  #stage.revealed #again{ opacity:1; visibility:visible; }
+  #again:hover{ filter:brightness(1.08); }
+
+  /* летающее кольцо */
+  #flyingRing{ position:absolute; width:80px; height:80px; z-index:8; cursor:pointer;
+    filter:drop-shadow(0 0 12px rgba(255,210,90,.9)); transition:transform .3s ease; }
+  #flyingRing:hover{ transform:scale(1.1); }
+  #flyingRing.gone{ opacity:0; pointer-events:none; transition:opacity .5s ease; }
+
+  /* фея Динь-Динь */
+  #fairy{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%) scale(0);
+    width:200px; height:280px; z-index:9; opacity:0; transition:transform .8s cubic-bezier(.34,1.56,.64,1), opacity .6s ease; }
+  #fairy.show{ transform:translate(-50%,-50%) scale(1); opacity:1; }
+  #fairy svg{ width:100%; height:100%; }
+  #fairy.laugh{ animation:laugh 0.6s ease-in-out infinite; }
+  @keyframes laugh{ 0%,100%{transform:translate(-50%,-50%) scale(1) rotate(0deg)} 25%{transform:translate(-50%,-50%) scale(1.05) rotate(-3deg)} 75%{transform:translate(-50%,-50%) scale(1.05) rotate(3deg)} }
+
+  /* облачко с текстом */
+  #speechBubble{ position:absolute; left:50%; top:15%; transform:translateX(-50%) scale(0);
+    background:#fff; border:3px solid #ffd700; border-radius:20px; padding:20px 30px;
+    font-size:clamp(16px,2.5vw,22px); color:#333; font-weight:bold; text-align:center;
+    box-shadow:0 8px 24px rgba(0,0,0,.3); z-index:10; opacity:0; transition:transform .6s cubic-bezier(.34,1.56,.64,1), opacity .5s ease;
+    max-width:80%; }
+  #speechBubble.show{ transform:translateX(-50%) scale(1); opacity:1; }
+  #speechBubble::after{ content:''; position:absolute; bottom:-15px; left:50%; transform:translateX(-50%);
+    width:0; height:0; border-left:15px solid transparent; border-right:15px solid transparent; border-top:15px solid #fff; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="glow"></div>
+
+  <div id="title">
+    <h1>✨ Вещи из мультфильмов ✨</h1>
+    <p>Шкатулка Анастасии · найди волшебный ключ и открой её</p>
+  </div>
+
+  <!-- ШКАТУЛКА -->
+  <div id="box">
+    <svg viewBox="0 0 240 240">
+      <defs>
+        <radialGradient id="bodyGrad" cx="38%" cy="30%" r="78%">
+          <stop offset="0%" stop-color="#7fe0a6"/>
+          <stop offset="45%" stop-color="#2fae6a"/>
+          <stop offset="100%" stop-color="#0c5a30"/>
+        </radialGradient>
+        <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#ffe9a8"/>
+          <stop offset="50%" stop-color="#e8b64c"/>
+          <stop offset="100%" stop-color="#a9781f"/>
+        </linearGradient>
+        <radialGradient id="gemRed" cx="35%" cy="30%" r="75%">
+          <stop offset="0%" stop-color="#ff9aa6"/><stop offset="45%" stop-color="#e23b52"/><stop offset="100%" stop-color="#8c1327"/>
+        </radialGradient>
+        <radialGradient id="gemBlue" cx="35%" cy="30%" r="75%">
+          <stop offset="0%" stop-color="#9ad4ff"/><stop offset="45%" stop-color="#2f7fd6"/><stop offset="100%" stop-color="#123f86"/>
+        </radialGradient>
+        <radialGradient id="gemAmber" cx="35%" cy="30%" r="75%">
+          <stop offset="0%" stop-color="#ffe6a6"/><stop offset="45%" stop-color="#f2b53c"/><stop offset="100%" stop-color="#9c6a12"/>
+        </radialGradient>
+        <radialGradient id="innerGlow" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#fff7cf"/><stop offset="60%" stop-color="#ffd873"/><stop offset="100%" stop-color="#c98f2a"/>
+        </radialGradient>
+      </defs>
+
+      <!-- тень на "полу" -->
+      <ellipse cx="120" cy="222" rx="86" ry="12" fill="rgba(0,0,0,.35)"/>
+
+      <!-- внутреннее свечение (видна щель при открытии) -->
+      <circle cx="120" cy="120" r="96" fill="url(#innerGlow)" opacity=".92"/>
+
+      <!-- КОЛЬЦО внутри -->
+      <g id="ring">
+        <circle cx="120" cy="150" r="26" fill="none" stroke="url(#gold)" stroke-width="8"/>
+        <path d="M120 118 l9 12 -9 12 -9 -12 Z" fill="url(#gemBlue)" stroke="#fff" stroke-width="1"/>
+        <circle cx="117" cy="123" r="2.4" fill="#fff" opacity=".85"/>
+      </g>
+
+      <!-- НИЖНЯЯ СФЕРА (остаётся) -->
+      <g id="lower">
+        <path d="M24 120 A96 96 0 0 0 216 120 Z" fill="url(#bodyGrad)" stroke="url(#gold)" stroke-width="3"/>
+        <!-- узоры золотом -->
+        <path d="M40 150 q20 14 40 0 t40 0 t40 0 t40 0" fill="none" stroke="url(#gold)" stroke-width="2.5" opacity=".85"/>
+        <path d="M52 178 q18 12 36 0 t36 0 t36 0" fill="none" stroke="url(#gold)" stroke-width="2.2" opacity=".7"/>
+        <g stroke="url(#gold)" stroke-width="2" fill="none" opacity=".8">
+          <path d="M120 132 c-10 8 -10 22 0 30 c10 -8 10 -22 0 -30 Z"/>
+          <path d="M120 132 v30"/>
+        </g>
+        <!-- драгоценности на нижней сфере -->
+        <circle cx="70" cy="165" r="7" fill="url(#gemRed)" stroke="#fff" stroke-width="1"/>
+        <circle cx="170" cy="165" r="7" fill="url(#gemBlue)" stroke="#fff" stroke-width="1"/>
+        <circle cx="120" cy="196" r="8" fill="url(#gemAmber)" stroke="#fff" stroke-width="1"/>
+        <circle cx="67" cy="162" r="2" fill="#fff" opacity=".8"/>
+        <circle cx="167" cy="162" r="2" fill="#fff" opacity=".8"/>
+      </g>
+
+      <!-- КРЫШКА (уезжает вверх) -->
+      <g id="lidGroup">
+        <path d="M24 120 A96 96 0 0 1 216 120 Z" fill="url(#bodyGrad)" stroke="url(#gold)" stroke-width="3"/>
+        <!-- зеркальный блик -->
+        <ellipse cx="86" cy="70" rx="34" ry="20" fill="#ffffff" opacity=".18"/>
+        <!-- золотая роза -->
+        <g stroke="url(#gold)" fill="none" stroke-linecap="round">
+          <circle cx="120" cy="78" r="4" stroke-width="2.4"/>
+          <path d="M120 78 a8 8 0 1 1 8 8" stroke-width="2.4"/>
+          <path d="M120 78 a13 13 0 1 0 -13 13" stroke-width="2.4"/>
+          <path d="M120 78 a18 18 0 1 1 18 18" stroke-width="2.2"/>
+        </g>
+        <!-- узор по краю -->
+        <path d="M40 108 q16 -10 32 0 t32 0 t32 0 t32 0" fill="none" stroke="url(#gold)" stroke-width="2.2" opacity=".8"/>
+        <!-- драгоценности на крышке -->
+        <circle cx="66" cy="98" r="6" fill="url(#gemAmber)" stroke="#fff" stroke-width="1"/>
+        <circle cx="174" cy="98" r="6" fill="url(#gemRed)" stroke="#fff" stroke-width="1"/>
+        <circle cx="120" cy="52" r="7" fill="url(#gemBlue)" stroke="#fff" stroke-width="1"/>
+        <circle cx="118" cy="50" r="2" fill="#fff" opacity=".8"/>
+      </g>
+
+      <!-- искры при открытии -->
+      <g id="sparkles">
+        <path class="sp" style="animation-delay:0s"   d="M60 40 l3 8 8 3 -8 3 -3 8 -3 -8 -8 -3 8 -3 Z"/>
+        <path class="sp" style="animation-delay:.3s"  d="M180 60 l2.5 7 7 2.5 -7 2.5 -2.5 7 -2.5 -7 -7 -2.5 7 -2.5 Z"/>
+        <path class="sp" style="animation-delay:.6s"  d="M120 20 l2 6 6 2 -6 2 -2 6 -2 -6 -6 -2 6 -2 Z"/>
+        <path class="sp" style="animation-delay:.9s"  d="M40 120 l2 6 6 2 -6 2 -2 6 -2 -6 -6 -2 6 -2 Z"/>
+        <path class="sp" style="animation-delay:1.2s" d="M200 130 l2 6 6 2 -6 2 -2 6 -2 -6 -6 -2 6 -2 Z"/>
+      </g>
+    </svg>
+  </div>
+
+  <div id="finalMsg">Тайна раскрыта! 💍 Внутри спряталось кольцо, а шкатулка играет свою мелодию 🎵</div>
+  <button id="again">🔑 Сыграть ещё раз</button>
+
+  <!-- фея Динь-Динь -->
+  <div id="fairy">
+    <svg viewBox="0 0 200 280">
+      <defs>
+        <radialGradient id="fairySkin" cx="50%" cy="40%">
+          <stop offset="0%" stop-color="#ffe4c4"/>
+          <stop offset="100%" stop-color="#f5d0a0"/>
+        </radialGradient>
+        <linearGradient id="fairyDress" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#7fff7f"/>
+          <stop offset="100%" stop-color="#2fae6a"/>
+        </linearGradient>
+        <radialGradient id="fairyHair" cx="50%" cy="30%">
+          <stop offset="0%" stop-color="#fff4b0"/>
+          <stop offset="100%" stop-color="#e8c34c"/>
+        </radialGradient>
+      </defs>
+      <!-- крылья -->
+      <ellipse cx="60" cy="140" rx="35" ry="60" fill="rgba(200,255,255,.6)" stroke="#fff" stroke-width="2"/>
+      <ellipse cx="140" cy="140" rx="35" ry="60" fill="rgba(200,255,255,.6)" stroke="#fff" stroke-width="2"/>
+      <!-- тело/платье -->
+      <path d="M100 120 Q80 160 75 220 L125 220 Q120 160 100 120 Z" fill="url(#fairyDress)" stroke="#2fae6a" stroke-width="2"/>
+      <!-- голова -->
+      <circle cx="100" cy="90" r="30" fill="url(#fairySkin)" stroke="#d4a574" stroke-width="2"/>
+      <!-- волосы -->
+      <path d="M70 80 Q70 50 100 50 Q130 50 130 80 Q130 95 125 100 L120 95 Q120 70 100 70 Q80 70 80 95 L75 100 Q70 95 70 80 Z" fill="url(#fairyHair)"/>
+      <!-- глаза -->
+      <circle cx="90" cy="88" r="3" fill="#333"/>
+      <circle cx="110" cy="88" r="3" fill="#333"/>
+      <!-- улыбка -->
+      <path d="M85 100 Q100 110 115 100" fill="none" stroke="#c44" stroke-width="2" stroke-linecap="round"/>
+      <!-- руки -->
+      <line x1="80" y1="140" x2="60" y2="170" stroke="url(#fairySkin)" stroke-width="8" stroke-linecap="round"/>
+      <line x1="120" y1="140" x2="140" y2="170" stroke="url(#fairySkin)" stroke-width="8" stroke-linecap="round"/>
+      <!-- палочка со звездой -->
+      <line x1="140" y1="170" x2="160" y2="200" stroke="#ffd700" stroke-width="3"/>
+      <path d="M160 200 l5 10 10 3 -10 3 -5 10 -5 -10 -10 -3 10 -3 Z" fill="#ffd700" stroke="#fff" stroke-width="1"/>
+    </svg>
+  </div>
+
+  <!-- облачко с текстом -->
+  <div id="speechBubble">Ты - молодец!<br>Почисти зубы и иди спать 😊</div>
+
+  <!-- летающее кольцо -->
+  <div id="flyingRing">
+    <svg viewBox="0 0 80 80">
+      <circle cx="40" cy="40" r="26" fill="none" stroke="url(#gold)" stroke-width="8"/>
+      <path d="M40 8 l9 12 -9 12 -9 -12 Z" fill="url(#gemBlue)" stroke="#fff" stroke-width="1"/>
+      <circle cx="37" cy="13" r="2.4" fill="#fff" opacity=".85"/>
+    </svg>
+  </div>
+
+  <!-- КЛЮЧ -->
+  <div id="key">
+    <svg viewBox="0 0 120 120">
+      <defs>
+        <linearGradient id="kGold" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#fff2b0"/>
+          <stop offset="45%" stop-color="#f4c34e"/>
+          <stop offset="100%" stop-color="#b9861f"/>
+        </linearGradient>
+      </defs>
+      <g stroke="url(#kGold)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <!-- головка в виде розы -->
+        <circle cx="34" cy="34" r="20" stroke-width="4"/>
+        <circle cx="34" cy="34" r="12" stroke-width="3"/>
+        <path d="M34 34 a6 6 0 1 1 6 6" stroke-width="3"/>
+        <path d="M34 22 a12 12 0 1 0 12 12" stroke-width="2.6"/>
+        <path d="M22 34 a12 12 0 1 1 12 -12" stroke-width="2.6"/>
+        <!-- стержень -->
+        <line x1="50" y1="50" x2="98" y2="98" stroke-width="6"/>
+        <!-- бороздка -->
+        <line x1="58" y1="58" x2="90" y2="90" stroke-width="2" opacity=".7"/>
+        <!-- зубцы -->
+        <path d="M98 98 l10 -6 M92 92 l10 -6 M86 86 l8 -10" stroke-width="5"/>
+      </g>
+    </svg>
+  </div>
+</div>
+
+<!-- ЧЁРНЫЙ ЭКРАН ОШИБКИ -->
+<div id="blackout"><span>Попробуй по-другому</span></div>
+
+<script>
+(function(){
+  var stage=document.getElementById('stage');
+  var key=document.getElementById('key');
+  var box=document.getElementById('box');
+  var blackout=document.getElementById('blackout');
+  var again=document.getElementById('again');
+
+  var opened=false, flying=false, blacking=false, audioCtx=null;
+  var KEY_X=0, KEY_Y=0; // текущий центр ключа (px)
+  var KEY_W=150, BOX_R=115, CONTACT=BOX_R+KEY_W*0.42; // момент касания
+
+  var ringClicks=0, ringTimer=null, chaosMode=false, chaosInterval=null;
+  var flyingRing=document.getElementById('flyingRing');
+  var fairy=document.getElementById('fairy');
+  var speechBubble=document.getElementById('speechBubble');
+
+  /* ---- звёзды ---- */
+  for(var i=0;i<70;i++){
+    var s=document.createElement('div'); s.className='star';
+    var sz=Math.random()*2+1;
+    s.style.width=sz+'px'; s.style.height=sz+'px';
+    s.style.left=Math.random()*100+'%'; s.style.top=Math.random()*100+'%';
+    s.style.animationDelay=(Math.random()*3)+'s';
+    stage.appendChild(s);
+  }
+
+  /* ---- вспомогательные функции ---- */
+  function center(el){ var r=el.getBoundingClientRect(); return {x:r.left+r.width/2, y:r.top+r.height/2}; }
+  function dist(a,b){ return Math.hypot(a.x-b.x,a.y-b.y); }
+  function clamp(v,mn,mx){ return Math.max(mn,Math.min(mx,v)); }
+
+  function flyTo(tx,ty,dur,cb){
+    if(flying) return; flying=true;
+    var sx=KEY_X, sy=KEY_Y;                 // центр сейчас
+    var w=key.offsetWidth||150, h=key.offsetHeight||150;
+    var ex=tx-w/2, ey=ty-h/2;              // целевой левый-верхний угол
+    var t0=performance.now();
+    function step(now){
+      var p=Math.min(1,(now-t0)/dur);
+      var e=p<.5?2*p*p:1-Math.pow(-2*p+2,2)/2;
+      var L=sx+(ex-sx)*e, T=sy+(ey-sy)*e;
+      key.style.left=L+'px'; key.style.top=T+'px';
+      KEY_X=L+w/2; KEY_Y=T+h/2;
+      if(p<1){ requestAnimationFrame(step); } else { flying=false; if(cb) cb(); }
+    }
+    requestAnimationFrame(step);
+  }
+
+  /* ---- правило 1: ЛКМ -> случайный шаг влево/вправо ---- */
+  function onKeyLeft(e){
+    e.preventDefault(); e.stopPropagation();
+    if(opened||flying||blacking) return;
+    var dir=Math.random()<.5?-1:1;
+    var nx=clamp(KEY_X+dir*(90+Math.random()*120), 80, window.innerWidth-80);
+    flyTo(nx, KEY_Y, 500);
+  }
+
+  /* ---- правило 2: ПКМ -> к шкатулке, касание открывает ---- */
+  function onKeyRight(e){
+    e.preventDefault(); e.stopPropagation();
+    if(opened||flying||blacking) return;
+    var bc=center(box);
+    flyTo(bc.x,bc.y,1100,function(){
+      if(dist(center(key),bc)<=CONTACT) openBox();
+    });
+  }
+
+  /* ---- открыть шкатулку + тайна (музыка и кольцо) ---- */
+  function openBox(){
+    if(opened) return; opened=true;
+    stage.classList.add('revealed');
+    box.classList.add('open');
+    playMelody();
+    setTimeout(function(){ key.classList.add('gone'); }, 1200); // ключ исчезает
+    startRingFlight();
+  }
+
+  /* ---- вылет кольца после открытия ---- */
+  function startRingFlight(){
+    setTimeout(function(){
+      flyingRing.style.left='50%';
+      flyingRing.style.top='50%';
+      flyingRing.style.transform='translate(-50%,-50%)';
+      flyingRing.style.opacity='1';
+      
+      var flightInterval=setInterval(function(){
+        if(chaosMode||ringClicks>=3){ clearInterval(flightInterval); return; }
+        var nx=Math.random()*(window.innerWidth-100)+50;
+        var ny=Math.random()*(window.innerHeight-100)+50;
+        flyingRing.style.transition='left 1.5s ease-in-out, top 1.5s ease-in-out';
+        flyingRing.style.left=nx+'px';
+        flyingRing.style.top=ny+'px';
+      },1800);
+      
+      ringTimer=setTimeout(function(){
+        if(ringClicks<3){ startChaos(); }
+      },10000);
+    },2000);
+  }
+
+  /* ---- клик по кольцу ---- */
+  flyingRing.addEventListener('click',function(e){
+    e.stopPropagation();
+    ringClicks++;
+    if(ringClicks>=3){
+      clearTimeout(ringTimer);
+      fairyAppear();
+    }
+  });
+
+  /* ---- появление феи ---- */
+  function fairyAppear(){
+    flyingRing.classList.add('gone');
+    fairy.classList.add('show');
+    setTimeout(function(){
+      fairy.classList.add('laugh');
+      speechBubble.classList.add('show');
+      playLaugh();
+    },800);
+  }
+
+  /* ---- смех феи (Web Audio) ---- */
+  function playLaugh(){
+    try{
+      if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+      var notes=[800,900,1000,900,800];
+      var t=audioCtx.currentTime;
+      notes.forEach(function(f,i){
+        var o=audioCtx.createOscillator(), g=audioCtx.createGain();
+        o.type='sine'; o.frequency.value=f;
+        var st=t+i*0.15;
+        g.gain.setValueAtTime(0,st);
+        g.gain.linearRampToValueAtTime(0.2,st+0.02);
+        g.gain.exponentialRampToValueAtTime(0.001,st+0.12);
+        o.connect(g); g.connect(audioCtx.destination); o.start(st); o.stop(st+0.15);
+      });
+    }catch(err){}
+  }
+
+  /* ---- хаотичное движение ключа ---- */
+  function startChaos(){
+    if(chaosMode) return;
+    chaosMode=true;
+    chaosInterval=setInterval(function(){
+      var nx=Math.random()*(window.innerWidth-150)+75;
+      var ny=Math.random()*(window.innerHeight-150)+75;
+      flyTo(nx,ny,300);
+    },500);
+  }
+
+  /* ---- музыка (Web Audio API, без файлов) ---- */
+  function playMelody(){
+    try{
+      if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+      var master=audioCtx.createGain();
+      master.gain.value=0.0001;
+      master.connect(audioCtx.destination);
+      var notes=[523.25,659.25,783.99,1046.5,783.99,1046.5,1318.5]; // до-мажорная арпеджио
+      var t=audioCtx.currentTime+0.05;
+      notes.forEach(function(f,i){
+        var o=audioCtx.createOscillator(), g=audioCtx.createGain();
+        o.type='triangle'; o.frequency.value=f;
+        var st=t+i*0.16;
+        g.gain.setValueAtTime(0,st);
+        g.gain.linearRampToValueAtTime(0.28,st+0.02);
+        g.gain.exponentialRampToValueAtTime(0.001,st+0.5);
+        o.connect(g); g.connect(master); o.start(st); o.stop(st+0.55);
+      });
+      master.gain.setValueAtTime(0.0001,t);
+      master.gain.linearRampToValueAtTime(0.9,t+0.05);
+    }catch(err){}
+  }
+
+  /* ---- нарушение порядка -> чёрный экран ---- */
+  function showBlackout(){
+    if(blacking||opened) return; blacking=true;
+    blackout.classList.add('show');
+    setTimeout(function(){ location.reload(); }, 2000);
+  }
+
+  /* обработчики */
+  key.addEventListener('mousedown', function(e){
+    if(e.button!==0 && e.button!==2) return;
+    var r=key.getBoundingClientRect();
+    var inKey = e.clientX>=r.left && e.clientX<=r.right && e.clientY>=r.top && e.clientY<=r.bottom;
+    if(!inKey) return;
+    e.preventDefault(); e.stopPropagation();
+    if(e.button===0) onKeyLeft(e); else onKeyRight(e);
+  });
+  key.addEventListener('contextmenu', function(e){ e.preventDefault(); onKeyRight(e); });
+
+  // клик по шкатулке / фону без ключа = нарушение
+  box.addEventListener('mousedown', function(e){ e.preventDefault(); e.stopPropagation(); showBlackout(); });
+  box.addEventListener('contextmenu', function(e){ e.preventDefault(); showBlackout(); });
+  stage.addEventListener('mousedown', function(e){ if(e.button===0 && !e.target.closest('#key')) showBlackout(); });
+
+  /* ---- начальная расстановка в пикселях ---- */
+  function placeInitial(){
+    var bc=center(box);
+    KEY_X=window.innerWidth*0.5;
+    KEY_Y=Math.min(window.innerHeight*0.74, bc.y+window.innerHeight*0.30);
+    key.style.left=(KEY_X-key.offsetWidth/2)+'px';
+    key.style.top =(KEY_Y-key.offsetHeight/2)+'px';
+    key.classList.add('pulse');
+  }
+  placeInitial();
+  again.addEventListener('click', function(){ location.reload(); });
+  window.addEventListener('resize', function(){ if(!opened&&!flying) placeInitial(); });
+
+})();
+</script>
+</body>
+</html>
